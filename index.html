@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kizovoice</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+    :root{--green:#00ff88;--green-glow:rgba(0,255,136,0.18);--bg:#090e0c;--bg2:#0d1410;--bg3:#111a15;--border:rgba(0,255,136,0.15);--text:#c8ffe0;--text-dim:#5a8a6a;--red:#ff4466}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+    .container{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:0 16px 40px}
+    header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:24px}
+    .logo{font-size:28px;font-weight:700;letter-spacing:2px;text-transform:uppercase}.logo span{color:var(--green)}
+    .status-badge{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    .tabs{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
+    .tab{flex:1;padding:14px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s;color:var(--text-dim);border:none;background:transparent}
+    .tab.active{background:rgba(0,255,136,0.1);color:var(--green);border-bottom:2px solid var(--green)}
+    .panel{display:none}.panel.active{display:block}
+    .mic-area{display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 0 24px}
+    .mic-btn{width:90px;height:90px;border-radius:50%;border:2px solid var(--green);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 0 20px var(--green-glow)}
+    .mic-btn:hover{transform:scale(1.05)}.mic-btn.listening{border-color:var(--red);animation:mic-pulse 1s infinite}
+    @keyframes mic-pulse{0%,100%{box-shadow:0 0 20px rgba(255,68,102,0.3)}50%{box-shadow:0 0 50px rgba(255,68,102,0.6)}}
+    .mic-btn svg{width:36px;height:36px;fill:var(--green)}.mic-btn.listening svg{fill:var(--red)}
+    .mic-label{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase}
+    .convo-label{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px}
+    .conversation{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:20px;min-height:200px;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;gap:12px;color:var(--text-dim)}
+    .empty-state .bot-icon{font-size:36px}.empty-state p{font-size:14px;text-align:center;line-height:1.5}
+    .message{display:flex;flex-direction:column;gap:4px;animation:fadeIn 0.3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .message.user{align-items:flex-end}.message.ai{align-items:flex-start}
+    .msg-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase}
+    .bubble{max-width:85%;padding:10px 14px;border-radius:8px;font-size:15px;line-height:1.5}
+    .message.user .bubble{background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.25)}
+    .message.ai .bubble{background:var(--bg3);border:1px solid var(--border)}
+    .message.error .bubble{background:rgba(255,68,102,0.1);border:1px solid rgba(255,68,102,0.3);color:#ff8899}
+    .typing-indicator{display:flex;gap:5px;padding:4px 0}
+    .typing-indicator span{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.2s infinite}
+    .typing-indicator span:nth-child(2){animation-delay:0.2s}.typing-indicator span:nth-child(3){animation-delay:0.4s}
+    @keyframes blink{0%,80%,100%{opacity:0.2}40%{opacity:1}}
+    .input-row{display:flex;gap:10px;margin-bottom:10px}
+    .msg-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none}
+    .msg-input::placeholder{color:var(--text-dim)}.msg-input:focus{border-color:rgba(0,255,136,0.4)}
+    .btn{padding:12px 20px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.2s}
+    .btn-green{background:var(--green);color:#000}.btn-green:hover{background:#00ffaa}.btn-green:disabled{opacity:0.4;cursor:not-allowed}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-dim)}
+    footer{border-top:1px solid var(--border);padding-top:16px;margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:2px;display:flex;justify-content:space-between}
+    footer span{color:var(--green)}
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">KIZO<span>VOICE</span></div>
+    <div class="status-badge"><div class="status-dot"></div>READY</div>
+  </header>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('voice',this)">Voice + AI</button>
+    <button class="tab" onclick="switchTab('images',this)">Images</button>
+  </div>
+  <div class="panel active" id="panel-voice">
+    <div class="mic-area">
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()">
+        <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 1 0 4 0V5a2 2 0 0 0-2-2zm7 7a1 1 0 0 1 1 1 8 8 0 0 1-7 7.938V21h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2v-2.062A8 8 0 0 1 4 11a1 1 0 1 1 2 0 6 6 0 1 0 12 0 1 1 0 0 1 1-1z"/></svg>
+      </button>
+      <div class="mic-label" id="micLabel">TAP TO SPEAK</div>
+    </div>
+    <div class="convo-label">CONVERSATION</div>
+    <div class="conversation" id="conversation">
+      <div class="empty-state" id="emptyState">
+        <div class="bot-icon">🤖</div>
+        <p>Tap the mic and speak,<br>or type below to chat with AI</p>
+      </div>
+    </div>
+    <div class="input-row">
+      <input class="msg-input" id="msgInput" type="text" placeholder="Or type your message..." onkeydown="if(event.key==='Enter')sendMessage()"/>
+      <button class="btn btn-green" id="sendBtn" onclick="sendMessage()">SEND</button>
+      <button class="btn btn-ghost" onclick="clearConvo()">CLEAR</button>
+    </div>
+  </div>
+  <div class="panel" id="panel-images">
+    <p style="color:var(--text-dim);text-align:center;padding:40px">Image uploads coming soon.</p>
+  </div>
+  <footer><span>KIZOVOICE</span> - VOICE + AI <span>EN-US</span></footer>
+</div>
+<script>
+  let messages=[],isLoading=false,recognition=null,isListening=false;
+  function switchTab(tab,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));el.classList.add('active');document.getElementById('panel-'+tab).classList.add('active');}
+  function toggleMic(){if(!('webkitSpeechRecognition'in window||'SpeechRecognition'in window)){addMessage('error','Speech recognition not supported. Use Chrome.');return;}if(isListening){recognition.stop();return;}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;recognition=new SR();recognition.lang='en-US';recognition.interimResults=false;recognition.onstart=()=>{isListening=true;document.getElementById('micBtn').classList.add('listening');document.getElementById('micLabel').textContent='LISTENING...';};recognition.onresult=(e)=>{document.getElementById('msgInput').value=e.results[0][0].transcript;sendMessage();};recognition.onend=recognition.onerror=()=>{isListening=false;document.getElementById('micBtn').classList.remove('listening');document.getElementById('micLabel').textContent='TAP TO SPEAK';};recognition.start();}
+  function addMessage(role,text){const convo=document.getElementById('conversation');document.getElementById('emptyState')?.remove();const div=document.createElement('div');div.className='message '+(role==='user'?'user':role==='error'?'ai error':'ai');div.innerHTML='<div class="msg-label">'+(role==='user'?'YOU':'AI')+'</div><div class="bubble"></div>';div.querySelector('.bubble').textContent=text;convo.appendChild(div);convo.scrollTop=convo.scrollHeight;}
+  function showTyping(){document.getElementById('emptyState')?.remove();const convo=document.getElementById('conversation');const div=document.createElement('div');div.className='message ai';div.id='typing';div.innerHTML='<div class="msg-label">AI</div><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';convo.appendChild(div);convo.scrollTop=convo.scrollHeight;}
+  async function sendMessage(){const input=document.getElementById('msgInput');const text=input.value.trim();if(!text||isLoading)return;input.value='';isLoading=true;document.getElementById('sendBtn').disabled=true;addMessage('user',text);messages.push({role:'user',content:text});showTyping();try{const res=await fetch('/.netlify/functions/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages})});document.getElementById('typing')?.remove();if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||'Error '+res.status);}const data=await res.json();const reply=data.content?.[0]?.text||'No response.';addMessage('ai',reply);messages.push({role:'assistant',content:reply});if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(reply);u.lang='en-US';speechSynthesis.speak(u);}}catch(err){document.getElementById('typing')?.remove();addMessage('error','Could not connect to AI. '+err.message);}finally{isLoading=false;document.getElementById('sendBtn').disabled=false;}}
+  function clearConvo(){messages=[];document.getElementById('conversation').innerHTML='<div class="empty-state" id="emptyState"><div class="bot-icon">🤖</div><p>Tap the mic and speak,<br>or type below to chat with AI</p></div>';}
+</script>
+</body>
+</html>
